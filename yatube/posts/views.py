@@ -1,18 +1,14 @@
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import PostForm
 from .models import Group, Post, User
+from .utils import paginating
 
 
 def index(request):
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
+    page_obj = paginating(request, post_list)
     context = {
         'page_obj': page_obj,
     }
@@ -22,9 +18,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts = group.posts.all()
-    paginator = Paginator(posts, settings.POSTS_NUM)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginating(request, posts)
     context = {
         'group': group,
         'page_obj': page_obj,
@@ -34,10 +28,7 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    #posts = Post.objects.filter(author=author)
-    paginator = Paginator(author.posts.all(), settings.POSTS_NUM)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginating(request, author.posts.all())
     context = {
         'author': author,
         'page_obj': page_obj,
@@ -74,8 +65,7 @@ def post_edit(request, post_id):
     if form.is_valid():
         form.save()
         return redirect('posts:post_detail', post_id=post_id)
-    return render(
-        request, 'posts/create_post.html',
-        {'form': form,
-         'is_edit': True},
-    )
+    return render(request,
+                  'posts/create_post.html',
+                  {'form': form, 'is_edit': True},
+                  )
